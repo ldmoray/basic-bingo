@@ -20,8 +20,7 @@ app.use(express.static("public"));
 // init sqlite db
 
 function DatabaseAPI() {
-  const dbFile = "./.data/sqlite.db";
-  const exists = fs.existsSync(dbFile);
+  const dbFile = ".data/sqlite.db";
   const sqlite3 = require("sqlite3").verbose();
   const DB = new sqlite3.Database(dbFile, function (err) {
     if (err) {
@@ -58,176 +57,162 @@ app.get("/", (request, response) => {
 });
 
 app.post("/hostGame", (request, response) => {
-  if (!process.env.DISALLOW_WRITE) {
-    let code = randomCode();
-    let small = request.body.short === "yes";
-    console.log(small);
-    db.run(
-      `INSERT INTO Games (code, create_time, small) VALUES (?, STRFTIME('%s', 'now'), ?);`,
-      [code, small],
-      (error) => {
-        if (error) {
-          console.log(error);
-          response.send({ message: "error!" });
-        } else {
-          response.cookie("gameHost", true, {
-            maxAge: 900000000,
-            httpOnly: false,
-          });
-          response.cookie("gameCode", code, {
-            maxAge: 900000000,
-            httpOnly: false,
-          });
-          response.clearCookie("currentNumber");
-          response.sendFile(__dirname + "/views/host.html");
-        }
+  let code = randomCode();
+  let small = request.body.short === "yes";
+  console.log(small);
+  db.run(
+    `INSERT INTO Games (code, create_time, small) VALUES (?, STRFTIME('%s', 'now'), ?);`,
+    [code, small],
+    (error) => {
+      if (error) {
+        console.log(error);
+        response.send({ message: "error!" });
+      } else {
+        response.cookie("gameHost", true, {
+          maxAge: 900000000,
+          httpOnly: false,
+        });
+        response.cookie("gameCode", code, {
+          maxAge: 900000000,
+          httpOnly: false,
+        });
+        response.clearCookie("currentNumber");
+        response.sendFile(__dirname + "/views/host.html");
       }
-    );
-  }
+    }
+  );
 });
 
 app.post("/joinGame", (request, response) => {
-  if (!process.env.DISALLOW_WRITE) {
-    db.get(
-      `SELECT id FROM Games WHERE code = UPPER(?);`,
-      [request.body.gameCode],
-      (err, row) => {
-        if (err) {
-          response.send({ message: "error!" });
+  db.get(
+    `SELECT id FROM Games WHERE code = UPPER(?);`,
+    [request.body.gameCode],
+    (err, row) => {
+      if (err) {
+        response.send({ message: "error!" });
+      } else {
+        if (row) {
+          response.cookie("gameCode", request.body.gameCode, {
+            maxAge: 900000000,
+            httpOnly: false,
+          });
+          response.cookie("gameHost", false, {
+            maxAge: 900000000,
+            httpOnly: false,
+          });
+          response.sendFile(__dirname + "/views/player.html");
         } else {
-          if (row) {
-            response.cookie("gameCode", request.body.gameCode, {
-              maxAge: 900000000,
-              httpOnly: false,
-            });
-            response.cookie("gameHost", false, {
-              maxAge: 900000000,
-              httpOnly: false,
-            });
-            response.sendFile(__dirname + "/views/player.html");
-          } else {
-            response.redirect("/");
-          }
+          response.redirect("/");
         }
       }
-    );
-  }
+    }
+  );
 });
 
 app.get("/genNextNumber", (request, response) => {
-  if (!process.env.DISALLOW_WRITE) {
-    db.get(
-      `SELECT id, small FROM Games WHERE code = UPPER(?);`,
-      [request.cookies.gameCode],
-      (err, row) => {
-        if (err) {
-          response.send({ message: "error!" });
-        } else {
-          let num;
-          let min = 0;
-          let max = 75;
-          if (row.small === 1) {
-            min = 16;
-            max = 60;
-          }
-          if (request.cookies.gameHost) {
-            if (!process.env.DISALLOW_WRITE) {
-              db.all(
-                `SELECT * FROM Numbers WHERE game = ?`,
-                [row.id],
-                (err, rows) => {
-                  if (err) {
-                    console.log(err);
-                  } else {
-                    let num = getRangeInt(min, max) + 1;
-                    rows = rows.map((x) => x.number);
-                    if (rows.length === max - min) {
-                      num = "Game Over!";
-                    } else {
-                      while (rows.includes(num)) {
-                        num = getRangeInt(min, max) + 1;
-                      }
-                      db.run(
-                        `INSERT INTO Numbers (game, number) VALUES (?, ?)`,
-                        [row.id, num]
-                      );
-                      num = bingoify(num);
-                    }
-                    response.cookie("currentNumber", num, {
-                      maxAge: 900000000,
-                      httpOnly: false,
-                    });
-                    response.sendFile(__dirname + "/views/host.html");
-                  }
-                }
-              );
-            }
-          }
+  db.get(
+    `SELECT id, small FROM Games WHERE code = UPPER(?);`,
+    [request.cookies.gameCode],
+    (err, row) => {
+      if (err) {
+        response.send({ message: "error!" });
+      } else {
+        let num;
+        let min = 0;
+        let max = 75;
+        if (row.small === 1) {
+          min = 16;
+          max = 60;
         }
-      }
-    );
-  }
-});
-
-app.get("/clearGame", (request, response) => {
-  if (!process.env.DISALLOW_WRITE) {
-    db.get(
-      `SELECT id FROM Games WHERE code = UPPER(?);`,
-      [request.cookies.gameCode],
-      (err, row) => {
-        if (err) {
-          response.send({ message: "error!" });
-        } else {
-          let num;
-          if (request.cookies.gameHost) {
-            if (!process.env.DISALLOW_WRITE) {
-              db.run(
-                `DELETE FROM Numbers WHERE game = ?`,
-                [row.id],
-                (err, rows) => {
-                  if (err) {
-                    console.log(err);
-                  } else {
-                    response.clearCookie("currentNumber");
-                    response.sendFile(__dirname + "/views/host.html");
-                  }
-                }
-              );
-            }
-          }
-        }
-      }
-    );
-  }
-});
-
-app.get("/getNextNumber", (request, response) => {
-  if (!process.env.DISALLOW_WRITE) {
-    db.get(
-      `SELECT id FROM Games WHERE code = UPPER(?);`,
-      [request.cookies.gameCode],
-      (err, row) => {
-        if (err) {
-          response.send({ message: "error!" });
-        } else {
-          let game = row.id;
-          return db.get(
-            `SELECT * FROM Numbers WHERE game = ? ORDER BY id DESC;`,
-            [game],
-            (err, row) => {
+        if (request.cookies.gameHost) {
+          db.all(
+            `SELECT * FROM Numbers WHERE game = ?`,
+            [row.id],
+            (err, rows) => {
               if (err) {
-                throw err;
+                console.log(err);
               } else {
-                console.log(row);
-                let num = row ? bingoify(row.number) : "Please Wait";
-                response.send({ number: num });
+                let num = getRangeInt(min, max) + 1;
+                rows = rows.map((x) => x.number);
+                if (rows.length === max - min) {
+                  num = "Game Over!";
+                } else {
+                  while (rows.includes(num)) {
+                    num = getRangeInt(min, max) + 1;
+                  }
+                  db.run(
+                    `INSERT INTO Numbers (game, number) VALUES (?, ?)`,
+                    [row.id, num]
+                  );
+                  num = bingoify(num);
+                }
+                response.cookie("currentNumber", num, {
+                  maxAge: 900000000,
+                  httpOnly: false,
+                });
+                response.sendFile(__dirname + "/views/host.html");
               }
             }
           );
         }
       }
-    );
-  }
+    }
+  );
+});
+
+app.get("/clearGame", (request, response) => {
+  db.get(
+    `SELECT id FROM Games WHERE code = UPPER(?);`,
+    [request.cookies.gameCode],
+    (err, row) => {
+      if (err) {
+        response.send({ message: "error!" });
+      } else {
+        let num;
+        if (request.cookies.gameHost) {
+          db.run(
+            `DELETE FROM Numbers WHERE game = ?`,
+            [row.id],
+            (err, rows) => {
+              if (err) {
+                console.log(err);
+              } else {
+                response.clearCookie("currentNumber");
+                response.sendFile(__dirname + "/views/host.html");
+              }
+            }
+          );
+        }
+      }
+    }
+  );
+});
+
+app.get("/getNextNumber", (request, response) => {
+  db.get(
+    `SELECT id FROM Games WHERE code = UPPER(?);`,
+    [request.cookies.gameCode],
+    (err, row) => {
+      if (err) {
+        response.send({ message: "error!" });
+      } else {
+        let game = row.id;
+        return db.get(
+          `SELECT * FROM Numbers WHERE game = ? ORDER BY id DESC;`,
+          [game],
+          (err, row) => {
+            if (err) {
+              throw err;
+            } else {
+              console.log(row);
+              let num = row ? bingoify(row.number) : "Please Wait";
+              response.send({ number: num });
+            }
+          }
+        );
+      }
+    }
+  );
 });
 
 const bingoify = function (num) {

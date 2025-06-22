@@ -24,7 +24,8 @@ function httpGetAsync(theUrl, callback) {
       callback(xmlHttp.response);
     }
   };
-  xmlHttp.open("GET", theUrl, true); // true for asynchronous
+
+  xmlHttp.open("GET", theUrl + (/\?/.test(theUrl) ? "&" : "?") + new Date().getTime(), true); // true for asynchronous
   xmlHttp.send(null);
 }
 
