@@ -5,8 +5,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const favicon = require("serve-favicon");
 const app = express();
-const fs = require("fs");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -16,6 +16,7 @@ app.use(cookieParser());
 
 // http://expressjs.com/en/starter/static-files.html
 app.use(express.static("public"));
+app.use(favicon(__dirname + "/public/favicon.ico"))
 
 // init sqlite db
 
@@ -214,6 +215,12 @@ app.get("/getNextNumber", (request, response) => {
     }
   );
 });
+
+app.get("/robots.txt", (request, response) => {
+  response.type("text/plain");
+  response.sendFile(__dirname + "/public/robots.txt")
+});
+
 
 const bingoify = function (num) {
   if (num <= 15) return "B" + num;
