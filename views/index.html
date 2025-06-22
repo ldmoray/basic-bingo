@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Bingo, but Basic" />
+
+    <title>Basic Bingo</title>
+
+    <link
+      id="favicon"
+      rel="icon"
+      href="https://glitch.com/edit/favicon-app.ico"
+      type="image/x-icon"
+    />
+
+    <link rel="stylesheet" href="/style.css" />
+
+    <script src="/client.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <h1>
+        Basic Bingo
+      </h1>
+    </header>
+
+    <main>
+      <form action="/joinGame" method="post">
+        <label for="gameCode">Host's Code:</label>
+        <input type="text" id="gameCode" name="gameCode" />
+        <input type="submit" value="Join A Game" />
+      </form>
+      <form action="/hostGame" method="post">
+        <input type="submit" value="Host Your Own" />
+        <label for="short" class="container"
+          >Short Game?<input
+            type="checkbox"
+            id="short"
+            name="short"
+            value="yes"
+          />
+          <span class="checkmark"></span>
+        </label>
+      </form>
+    </main>
+
+    <footer>Made with <a href="https://glitch.com">Glitch</a>! by Lenny</footer>
+  </body>
+</html>

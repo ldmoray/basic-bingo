@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Bingo, but Basic" />
+
+    <title>Basic Bingo</title>
+
+    <link
+      id="favicon"
+      rel="icon"
+      href="https://glitch.com/edit/favicon-app.ico"
+      type="image/x-icon"
+    />
+    <!-- import the webpage's stylesheet -->
+    <link rel="stylesheet" href="/style.css" />
+
+    <!-- import the webpage's client-side javascript file -->
+    <script src="/client.js"></script>
+  </head>
+  <body onload="hostLoaded()">
+    <header>
+      <h2 id="header">
+        Hosting:
+      </h2>
+      <h1 id="gameCode">
+        
+      </h1>
+    </header>
+
+    <main>
+      <h2>
+        Current Draw:
+      </h2>
+      <h1 id="currentNumber">
+      </h1>
+      <form action="/genNextNumber" method="get">
+        <input type="submit" value="Next Number!">
+      </form>
+      <form action="/clearGame" method="get">
+        <input type="submit" value="Restart Game!">
+      </form>
+    </main>
+
+    <footer>Made with <a href="https://glitch.com">Glitch</a>! by Lenny</footer>
+  </body>
+</html>
